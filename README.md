@@ -1,7 +1,7 @@
 # Customer_Churn_Prediction
-Customer Churn Prediction with XGBoost in Apache Spark and SparklyR
+Customer Churn Prediction with XGBoost with Apache Spark and SparklyR
 
-Il progetto mira ad avere degli strumenti statistici che permettano di prevedere e studiare il fenomeno dell'abbandono dei clienti (Customer Churn Prediction) in una società che opera principalmente nel settore energetico e delle telecomunicazioni.
+Il progetto mira ad ottenere degli strumenti statistici che permettano di prevedere e studiare il fenomeno dell'abbandono dei clienti (Customer Churn Prediction). Il lavoro è stato svolto per una società che opera principalmente nel settore energetico e delle telecomunicazioni.
 
 I principali **obiettivi** dell'analisi sono:
 
@@ -15,13 +15,13 @@ Tra i molteplici **vantaggi** per l'azienda direttamente derivabili dal raggiung
 
 # Strumenti utilizzati
 
-Per l'analisi statistica è stato utilizzata la metodologia di machine learning [Gradient Boosted Trees](https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/)
+Per l'analisi statistica è stato utilizzata la metodologia di machine learning [Gradient Boosted Trees (GBT)](https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/)
 Si tratta di una metologia all'avanguardia che permette di raggiungere performance molto elevate.
 Si tratta di un'analisi svolta in modo completamente integrato con l'infrastruttura Big Data aziendale. Nello specifico si ha a disposizione un cluster [Hadoop](https://hadoop.apache.org/) con i relativi tool (Yarn, Nifi, Hive, Spark etc.), i dati sono su Hadoop Distribuited File System (HDFS) e la parte di analisi dei dati è stata fatta in gran parte utilizzando la libreria [Spark](https://spark.apache.org/) per Rstudio [```SparklyR```](https://spark.rstudio.com/), che ha a disposizione gli algoritmi di machine learning della libreria ```Mllib``` per Spark.
 
 # Dataset
 
-È stata operata una suddivisione del parco clienti in 3 diversi dataset in base alla tipologia contrattuale e sono stati addestrati 3 algoritimi RSF differenti. In questo repository si farà riferimento all'analisi effettuata sui clienti Business. Il dataframe è composto da circa 40mila osservazioni e 256 variabili. Di questi circa il 50% hanno sperimentato il churn. Volendo suddividere in macro categorie le variabili incluse si possono distinguere:
+È stata operata una suddivisione del parco clienti in 3 diversi dataset in base alla tipologia contrattuale e sono stati addestrati 3 algoritimi GBT differenti. In questo repository si farà riferimento all'analisi effettuata sui clienti Business. Il dataframe è composto da circa 40mila osservazioni e 256 variabili. Di questi circa il 50% hanno sperimentato il churn. Volendo suddividere in macro categorie le variabili incluse si possono distinguere:
 
 - Variabili socio-anagrafiche legate al referente del contratto: quali l’età, l’area di residenza, il genere e così via.
 - Variabili legate alle caratteristiche contrattuali del cliente: quali numero e tipo di utenze da quando è diventato cliente dell'azienda;
@@ -36,8 +36,7 @@ variabili sulle specifiche tecniche dell’utenza, ad esempio il tipo di linea, 
 - Infine le variabili di risposta sono due, una indica se l'osservazione ha sperimentato l'evento terminale (churn), mentre l'altra indica il numero di mesi trascorsi dalla stipula del contratto.
 Per ragioni di rispetto della privacy non è possibile caricare i dati su questo repository.
 
-Una parte del pre-processing dei dati è stata fatta direttamente con i tool del cluster, mentre la gran parte dell'analisi è stata portata avanti in RStudio. Il codice completo è consultabile e scaricabile nei file allegati al presente repository Github, in questo file di introduzione invece ci si soffermerà solo su alcuni punti del codice. Va sottolineato che in alcuni punti degli script R il codice è poco conciso a causa dell'impossibilità dell'utilizzo di gran parte delle funzioni R sulle Spark Table. Sono utilizzabili infatti solo con alcune delle funzioni del [```tydiverse```](https://www.tidyverse.org/) e in particolar modo di ```dplyr``` per la manipolazione dei dati.
-
+Una parte del pre-processing dei dati è stata fatta direttamente con i tool del cluster Hadoop, mentre la gran parte dell'analisi è stata portata avanti in RStudio. Il codice completo è consultabile e scaricabile nei file allegati al presente repository Github, in questo file di introduzione invece ci si soffermerà solo su alcuni punti del codice. Va sottolineato che in alcuni punti degli script R il codice è poco conciso a causa dell'impossibilità dell'utilizzo di gran parte delle funzioni R sulle Spark Table. Sono utilizzabili infatti solo con alcune delle funzioni del [```tydiverse```](https://www.tidyverse.org/) e in particolar modo di ```dplyr``` per la manipolazione dei dati.
 
 
 
