@@ -1,5 +1,5 @@
 # Customer_Churn_Prediction
-Customer Churn Prediction with XGBoost with Apache Spark and SparklyR
+Customer Churn Prediction with Gradient Bosted Tree on Apache Hadoop cluster
 
 Il progetto mira ad ottenere degli strumenti statistici che permettano di prevedere e studiare il fenomeno dell'abbandono dei clienti (Customer Churn Prediction). Il lavoro è stato svolto per una società che opera principalmente nel settore energetico e delle telecomunicazioni.
 
@@ -36,8 +36,87 @@ variabili sulle specifiche tecniche dell’utenza, ad esempio il tipo di linea, 
 - Infine le variabili di risposta sono due, una indica se l'osservazione ha sperimentato l'evento terminale (churn), mentre l'altra indica il numero di mesi trascorsi dalla stipula del contratto.
 Per ragioni di rispetto della privacy non è possibile caricare i dati su questo repository.
 
-Una parte del pre-processing dei dati è stata fatta direttamente con i tool del cluster Hadoop, mentre la gran parte dell'analisi è stata portata avanti in RStudio. Il codice completo è consultabile e scaricabile nei file allegati al presente repository Github, in questo file di introduzione invece ci si soffermerà solo su alcuni punti del codice. Va sottolineato che in alcuni punti degli script R il codice è poco conciso a causa dell'impossibilità dell'utilizzo di gran parte delle funzioni R sulle Spark Table. Sono utilizzabili infatti solo con alcune delle funzioni del [```tydiverse```](https://www.tidyverse.org/) e in particolar modo di ```dplyr``` per la manipolazione dei dati.
+Una parte del pre-processing dei dati è stata fatta direttamente con i tool del cluster Hadoop, mentre la gran parte dell'analisi è stata portata avanti in RStudio. Il codice completo è consultabile e scaricabile nei file allegati al presente repository Github, in questo file di introduzione invece ci si soffermerà solo su alcuni punti del codice. Va sottolineato che in alcuni punti degli script R (in particolare per quel che riguarda la parte di data pre-processing) il codice è poco conciso a causa dell'impossibilità dell'utilizzo di gran parte delle funzioni R sulle Spark Table. Sono utilizzabili infatti solo con alcune delle funzioni del [```tydiverse```](https://www.tidyverse.org/) e in particolar modo di ```dplyr``` per la manipolazione dei dati.
 
+In questa breve presentazione verrà commentato solo il codice inserito nel file wrapper.R, mentre per il codice completo richiamato nel wrapper si rimanda al codice completo caricato nel presente repository.
+Per prima cosa vengono caricate le librerie R sono stati configurati i paramentri della connessione al cluster da ambiente R. Chiaramente i paramentri vanno impostati in base alle risorse computazionali a disposizione sul cluster, sulla base della potenza necessaria al task da svolgere, alla necessità o meno di lavorare in più persone contemporaneamente sul cluster, e così via.
 
+```
+#carico le librerie
+source(paste(home,"libreries.R",sep=''))
 
+#Richiamo la function importDatiFromSql (non inserita per intero perché contiene dati di accesso riservati)
+source("/home/gennaronew/Library/importDatiFromSQL.R")
 
+# Creo la Spark Connection e setto i parametri
+java_home_path='/opt/java'
+yarn_conf_dir='/opt/conf.cloudera.yarn/'
+hadoop_conf_dir='/opt/conf.cloudera.yarn/'
+hive_home='/opt/conf.cloudera.yarn/'
+hadoop_user_name='your_user'
+
+yarn_archive='hdfs://path/to/yarnarchive.zip'
+spark_home="/opt/spark"
+
+Sys.setenv(JAVA_HOME = java_home_path)
+Sys.setenv(YARN_CONF_DIR = yarn_conf_dir)
+Sys.setenv(HADOOP_CONF_DIR = hadoop_conf_dir)
+Sys.setenv(HIVE_HOME = hive_home)
+Sys.setenv(HADOOP_USER_NAME = hadoop_user_name)
+cfg = spark_config()
+cfg$sparklyr.yarn.cluster.start.timeout <- 200
+cfg$spark.executor.cores <- 5 
+cfg$spark.executor.memory = "5g"
+cfg$spark.executor.instances <- 14
+cfg$spark.yarn.archive=yarn_archive
+#nuove aggiunte:
+cfg$spark.driver.memory = cfg$spark.executor.memory
+cfg$spark.driver.cores = cfg$spark.executor.cores
+
+Sys.time()
+sc = spark_connect(master = "master-name",spark_home=spark_home, config = cfg)
+Sys.time()
+```
+
+Una volta stabilita la connessione, vengono generati i dati aggiornati e richiamati nel formato parquet in cui vengono salvati nello script data.R:
+
+```
+source(paste(home,"data.R",sep=''))
+
+pib_pq = spark_read_parquet(sc, "pib", "/user/flavio/pib",overwrite = TRUE)
+```
+
+Nel corso del data pre-processing vengono attuate tutta una serie di operazioni di creazione di nuove variabili di sintesi, normalizzazioni, standardizzazioni delle variabili numeriche e imputazione dei dati mancanti.
+
+Per l'addestramento dell'algoritmo sono state selezionate 55 variabili indipendenti. Dal dataset è stato sottratto il 30% delle osservazioni in modo casuale per la consueta fase di test. L'addestramento del modello con Spark è molto prestante, richiedendo soltanto 30 secondi circa. L'accuracy ottenuta utilizzando il metodo del calcolo dell'area sottostante la curva di ROC (ROC-AUC index) restituisce un'accuracy molto elevata, superiore al 90%. Se invece si guarda all'indice di concordanza, ottenuto impostando il threshold per il churn quando la probabilità di churn supera il 50%, e verificando la percentuale di falsi positivi o falsi negativi sul totale, si ottiene un'accuracy dell'85%. Chiaramente il valore è più basso ma comunque più che soddisfacente in termini assoluti.
+
+Il modello viene richiamato nel wrapper:
+
+```
+gbt_pib <- ml_load(sc, path = "/user/flavio/models/gbt_pib")
+```
+
+E il modello viene utilizzato per fare predizioni sull'intero parco clienti, anche quelli non utilizzati per l'addestramento per varie ragioni e quelli neo-acquisiti:
+
+```
+pred_pib_all <- ml_predict(gbt_pib,pib_pq)
+```
+
+Vengono aggiunti poi gli idcliente da una tabella importata dai DB aziendali in Rstudio con una semplice operazione di join e viene scritta la tabella parquet sull'HDFS (Hadoop Distribuited File System):
+
+```
+dim_clt = importDatiFromSql(sqlText = "select IdCliente, cluster from [mi-dataw].[it_dwh].[dbo].[dim_crm_clienti]")
+pred_all = pred_all %>% inner_join(dim_clt, by=c("cliente" = "IdCliente"), copy=T)
+spark_write_parquet(pred_all, "/user/flavio/predicted_business", mode="overwrite")
+```
+
+Infine si valuta il tempo impiegato per l'esecuzione dell'intero processo per valutare le prestazioni e per comprenderne le modalità di inserimento nei processi in produzione sui sistemi aziendali.
+
+```
+end_time <- Sys.time()
+tempo_impiegato = end_time - start_time
+print(paste("start time:",start_time,'-',"end time:",end_time))
+print(tempo_impiegato)
+```
+
+A questo 
