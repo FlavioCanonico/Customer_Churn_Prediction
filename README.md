@@ -93,9 +93,14 @@ Nel corso del data pre-processing vengono attuate tutta una serie di operazioni 
 
 Per l'addestramento dell'algoritmo sono state selezionate 55 variabili indipendenti. Dal dataset è stato sottratto il 30% delle osservazioni in modo casuale per la consueta fase di test. L'addestramento del modello con Spark è molto prestante, richiedendo soltanto 30 secondi circa. L'accuracy ottenuta utilizzando il metodo del calcolo dell'area sottostante la curva di ROC (ROC-AUC index) restituisce un'accuracy molto elevata, superiore al 90%. Se invece si guarda all'indice di concordanza, ottenuto impostando il threshold per il churn quando la probabilità di churn supera il 50%, e verificando la percentuale di falsi positivi o falsi negativi sul totale, si ottiene un'accuracy dell'85%. Chiaramente il valore è più basso ma comunque più che soddisfacente in termini assoluti.
 
-Si è proceduto poi alla costruzione di una heatmap, per studiare le relazioni tra le variabili indipendenti e la probabilità di abbandono. Nello specifico si sono raggruppati i clienti in quattro classi sulla base della loro stima di chrn probability (0-25%, 25-50%, 50-75%, 75-100%) e si è costruita così l'asse delle ascisse. Sull'asse delle ordinate sono state poste le variabili indipendenti in ordine di Variable Importance dal basso verso l'alto.
+Si è proceduto poi alla costruzione di una heatmap, per studiare le relazioni tra le variabili indipendenti e la probabilità di abbandono. Nello specifico si sono raggruppati i clienti in quattro classi sulla base della loro stima di chrn probability (0-25% = green, 25-50% = yellow, 50-75% = orange , 75-100% = red) e si è costruita così l'asse delle ascisse. Sull'asse delle ordinate sono state poste le variabili indipendenti in ordine di Variable Importance dal basso verso l'alto.
 
+![heatmap](https://github.com/FlavioCanonico/Customer_Churn_Prediction/blob/master/heatmap.png)
 
+Un colore rosso di intensità maggiore all’interno dei rettangoli indica che i clienti con quella stima di churn probability hanno un valore molto superiore rispetto alla media per quella variabile a cui il rettangolo corrisponde. Un colore vicino al bianco indica che questi valori sono in media. Infine un colore blu di intensità maggiore indica che i valori della variabile sono sotto media per la variabile in questione data una certa stima di churn probability. Ad esempio, guardando al primo rettangolo in basso a destra, si può dire che quei clienti per i quali l'algoritmo stima una probabilità di churn elevata sono i clienti che hanno sottoscritto un contratto da meno tempo rispetto alla media del parco analizzato.
+Questo chiaramente vale per le variabili numeriche. Per le variabili categoriali viene riportata una riga per ogni categoria della variabile stessa. L’interpretazione tuttavia è simile. Nel caso della variabile che registra il tipo di cliente le categorie possibili sono tre: cliente Energia e/o Gas (ENG), cliente Voce, Adsl e/o Mobile (TLC) o cliente misto (ENG/TLC). In questo caso, ad esempio, il colore tendente al rosso per la riga all’intreccio tra la categoria ENG e la stima di churn denominata "red" (75-100%), indica che i clienti maggiormente a rischio di abbandono sono maggiormente quelli con solo prodotto energia.
+
+# Predizioni
 
 Il modello viene richiamato nel wrapper:
 
@@ -109,7 +114,7 @@ E il modello viene utilizzato per fare predizioni sull'intero parco clienti, anc
 pred_pib_all <- ml_predict(gbt_pib,pib_pq)
 ```
 
-Vengono aggiunti poi gli idcliente da una tabella importata dai DB aziendali in Rstudio con una semplice operazione di join e viene scritta la tabella parquet sull'HDFS (Hadoop Distribuited File System):
+Vengono aggiunti poi gli idcliente tramite una semplice operazione di join con una tabella importata dai DB aziendali in Rstudio e viene scritta la tabella dei risultati in formato parquet sull'HDFS (Hadoop Distribuited File System):
 
 ```
 dim_clt = importDatiFromSql(sqlText = "select IdCliente, cluster from [mi-dataw].[it_dwh].[dbo].[dim_crm_clienti]")
@@ -128,5 +133,8 @@ print(tempo_impiegato)
 
 A questo punto i sistemi del CRM aziendale leggono i dati dall'HDFS e viene visualizzata in anagrafica del cliente la churn probability:
 
+![NBA](https://github.com/FlavioCanonico/Customer_Churn_Prediction/blob/master/NBA.png)
 
-Il dato inoltre contribuisce ad alimentare i criteri di creazione delle Next Best Action attuabili sul cliente in seguito a una chiamata inbound.
+Il dato inoltre contribuisce ad alimentare i criteri di creazione delle Next Best Action attuabili sul cliente in seguito a una chiamata inbound, create nell'ambito del progetto ritrovabile del [progetto per la stima del lifetime e del lifetime value](https://github.com/FlavioCanonico/customer_lt_ltv/blob/master/README.md) dei singoli clienti.
+
+Il dato viene aggiornato ogni giorno e la stima viene ricalcolata, per avere stime aggiornate con cadenza giornaliera e poter attuare strategie specifiche sui clienti in modo tempestivo.
