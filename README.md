@@ -88,7 +88,14 @@ pib_pq = spark_read_parquet(sc, "pib", "/user/flavio/pib",overwrite = TRUE)
 
 Nel corso del data pre-processing vengono attuate tutta una serie di operazioni di creazione di nuove variabili di sintesi, normalizzazioni, standardizzazioni delle variabili numeriche e imputazione dei dati mancanti.
 
+
+# GBT training
+
 Per l'addestramento dell'algoritmo sono state selezionate 55 variabili indipendenti. Dal dataset è stato sottratto il 30% delle osservazioni in modo casuale per la consueta fase di test. L'addestramento del modello con Spark è molto prestante, richiedendo soltanto 30 secondi circa. L'accuracy ottenuta utilizzando il metodo del calcolo dell'area sottostante la curva di ROC (ROC-AUC index) restituisce un'accuracy molto elevata, superiore al 90%. Se invece si guarda all'indice di concordanza, ottenuto impostando il threshold per il churn quando la probabilità di churn supera il 50%, e verificando la percentuale di falsi positivi o falsi negativi sul totale, si ottiene un'accuracy dell'85%. Chiaramente il valore è più basso ma comunque più che soddisfacente in termini assoluti.
+
+Si è proceduto poi alla costruzione di una heatmap, per studiare le relazioni tra le variabili indipendenti e la probabilità di abbandono. Nello specifico si sono raggruppati i clienti in quattro classi sulla base della loro stima di chrn probability (0-25%, 25-50%, 50-75%, 75-100%) e si è costruita così l'asse delle ascisse. Sull'asse delle ordinate sono state poste le variabili indipendenti in ordine di Variable Importance dal basso verso l'alto.
+
+
 
 Il modello viene richiamato nel wrapper:
 
@@ -119,4 +126,7 @@ print(paste("start time:",start_time,'-',"end time:",end_time))
 print(tempo_impiegato)
 ```
 
-A questo 
+A questo punto i sistemi del CRM aziendale leggono i dati dall'HDFS e viene visualizzata in anagrafica del cliente la churn probability:
+
+
+Il dato inoltre contribuisce ad alimentare i criteri di creazione delle Next Best Action attuabili sul cliente in seguito a una chiamata inbound.
