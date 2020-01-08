@@ -138,3 +138,7 @@ A questo punto i sistemi del CRM aziendale leggono i dati dall'HDFS e viene visu
 Il dato inoltre contribuisce ad alimentare i criteri di creazione delle Next Best Action attuabili sul cliente in seguito a una chiamata inbound, create nell'ambito del progetto ritrovabile del [progetto per la stima del lifetime e del lifetime value](https://github.com/FlavioCanonico/customer_lt_ltv/blob/master/README.md) dei singoli clienti.
 
 Il dato viene aggiornato ogni giorno e la stima viene ricalcolata, per avere stime aggiornate con cadenza giornaliera e poter attuare strategie specifiche sui clienti in modo tempestivo.
+
+# Conclusioni
+
+Lo studio del fenomeno dell'abbandono dei clienti mediante strumenti statistici permette alle aziende di avere grossi vantaggi. In questo lavoro si sono mostrate solo alcune delle applicazioni possibili grazie a un calcolo accurato della stima della churn probability e dello studio delle sue cause. Si tratta di strumenti molto flessibili. Il concetto di Next Best Action ad esmepio può essere utilizzato per molteplici scopi e in diversi campi di business, dal campo della customer base management fino al marketing, alle vendite e così via.
